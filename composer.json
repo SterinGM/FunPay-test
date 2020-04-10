@@ -7,5 +7,8 @@
             "email": "muxajibi41981@gmail.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "require-dev": {
+        "codeception/codeception": "^4.1"
+    }
 }
