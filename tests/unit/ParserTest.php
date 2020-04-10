@@ -28,6 +28,17 @@ class ParserTest extends Unit
     public function testNormalSms()
     {
         $result = $this->parser->parseSms(
+            "<p>Пароль:0720</p>
+             <p>Сумма:100,51р.</p>
+             <p>Счет:4100123123123.</p>"
+        );
+        $this->tester->assertEquals($result, [
+            'password' => '0720',
+            'amount' => 100.51,
+            'wallet' => '4100123123123',
+        ]);
+
+        $result = $this->parser->parseSms(
             "<p>Пароль: 0720</p>
              <p>Спишется 100,51р.</p>
              <p>Перевод на счет 4100123123123</p>"
@@ -111,6 +122,14 @@ class ParserTest extends Unit
                 "Пароль: 10720\n
                  Спишется 100.51руб\n
                  Перевод на счет 4100123123123123123123\n"
+            );
+        });
+
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n
+                 Перевод на счет 14100123123123\n"
             );
         });
 

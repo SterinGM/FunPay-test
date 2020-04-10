@@ -41,7 +41,7 @@ class Parser implements ParserInterface
         $sms = str_replace(array("\r\n", "\r", "\n"), "<br />", $sms);
         $sms = str_replace('<', ' <', $sms);
         $sms = strip_tags($sms);
-        $sms = $sms . ' ';
+        $sms = ' ' . $sms . ' ';
 
         return $sms;
     }
@@ -57,13 +57,13 @@ class Parser implements ParserInterface
      */
     private function getWalletNumber(string &$sms): string
     {
-        $pattern = '/(41001\d{8,11})(\D+)/mui';
+        $pattern = '/(\D+)(41001\d{8,11})(\D+)/mui';
         preg_match($pattern, $sms, $matches);
 
-        if (isset($matches[1])) {
-            $sms = str_replace($matches[1], ' ', $sms);
+        if (isset($matches[2])) {
+            $sms = str_replace($matches[2], ' ', $sms);
 
-            return $matches[1];
+            return $matches[2];
         } else {
             throw new Exception('Wallet number not found.');
         }
