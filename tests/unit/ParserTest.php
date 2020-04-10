@@ -6,6 +6,8 @@ use Codeception\Test\Unit;
 
 class ParserTest extends Unit
 {
+    use Codeception\AssertThrows;
+
     /**
      * @var UnitTester
      */
@@ -26,14 +28,25 @@ class ParserTest extends Unit
     public function testNormalSms()
     {
         $result = $this->parser->parseSms(
+            "<p>Пароль: 0720</p>
+             <p>Спишется 100,51р.</p>
+             <p>Перевод на счет 4100123123123</p>"
+        );
+        $this->tester->assertEquals($result, [
+            'password' => '0720',
+            'amount' => 100.51,
+            'wallet' => '4100123123123',
+        ]);
+
+        $result = $this->parser->parseSms(
             "Пароль: 0720<br />
              Спишется 100,51р.<br />
              Перевод на счет 4100123123123"
         );
         $this->tester->assertEquals($result, [
             'password' => '0720',
-            'amount' => '100,51',
-            'wallet' => '41001231231232',
+            'amount' => 100.51,
+            'wallet' => '4100123123123',
         ]);
 
         $result = $this->parser->parseSms(
@@ -43,29 +56,18 @@ class ParserTest extends Unit
         );
         $this->tester->assertEquals($result, [
             'password' => '0720',
-            'amount' => '100,51',
-            'wallet' => '41001231231232',
+            'amount' => 100.51,
+            'wallet' => '4100123123123',
         ]);
 
         $result = $this->parser->parseSms(
-            "Пароль: 0720.<br />
-             Спишется 100,51р.<br />
-             Перевод на счет 4100123123123."
-        );
-        $this->tester->assertEquals($result, [
-            'password' => '0720',
-            'amount' => '100,51',
-            'wallet' => '41001231231232',
-        ]);
-
-        $result = $this->parser->parseSms(
-            "Пароль: 10720.<br />
+            "Пароль: 10720<br />
              Спишется 100.51 руб.<br />
              Перевод на счет 4100123123123123."
         );
         $this->tester->assertEquals($result, [
-            'password' => '0720',
-            'amount' => '100,51',
+            'password' => '10720',
+            'amount' => 100.51,
             'wallet' => '4100123123123123',
         ]);
 
@@ -75,8 +77,8 @@ class ParserTest extends Unit
              Перевод на счет 4100123123123123\n"
         );
         $this->tester->assertEquals($result, [
-            'password' => '0720',
-            'amount' => '100,51',
+            'password' => '10720',
+            'amount' => 100.51,
             'wallet' => '4100123123123123',
         ]);
 
@@ -84,8 +86,8 @@ class ParserTest extends Unit
             "Пароль: 10720 Спишется 100.51руб Перевод на счет 4100123123123123"
         );
         $this->tester->assertEquals($result, [
-            'password' => '0720',
-            'amount' => '100,51',
+            'password' => '10720',
+            'amount' => 100.51,
             'wallet' => '4100123123123123',
         ]);
 
@@ -93,45 +95,68 @@ class ParserTest extends Unit
             "   Пароль: 10720   Спишется 100.51руб   Перевод на счет 4100123123123123   "
         );
         $this->tester->assertEquals($result, [
-            'password' => '0720',
-            'amount' => '100,51',
+            'password' => '10720',
+            'amount' => 100.51,
             'wallet' => '4100123123123123',
         ]);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testFailedSms()
     {
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Пароль: 10720\n
-             Спишется 100.51руб\n
-             Перевод на счет 4100123123123123123123\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n
+                 Перевод на счет 4100123123123123123123\n"
+            );
+        });
 
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Пароль: 10720\n
-             Спишется 100.51руб\n
-             Перевод на счет 4100123123\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n
+                 Перевод на счет 4100123123\n"
+            );
+        });
 
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Пароль: 10720\n
-             Спишется 100.51руб\n
-             Перевод на счет 123123123123123\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n
+                 Перевод на счет 123123123123123\n"
+            );
+        });
 
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Пароль: 10720\n
-             Спишется 100.51руб\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n
+                 Перевод на счет 4100923123123123\n"
+            );
+        });
 
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Пароль: 10720\n
-             Перевод на счет 4100123123123123\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Wallet number not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Спишется 100.51руб\n"
+            );
+        });
 
-        $this->tester->expectThrowable(Exception::class, $this->parser->parseSms(
-            "Спишется 100.51руб\n
-             Перевод на счет 4100123123123123\n"
-        ));
+        $this->assertThrowsWithMessage(Exception::class, 'Amount not found.',  function() {
+            $this->parser->parseSms(
+                "Пароль: 10720\n
+                 Перевод на счет 4100123123123123\n"
+            );
+        });
+
+        $this->assertThrowsWithMessage(Exception::class, 'Password code not found.',  function() {
+            $this->parser->parseSms(
+                "Спишется 100.51руб\n
+                 Перевод на счет 4100123123123123\n"
+            );
+        });
     }
 }
