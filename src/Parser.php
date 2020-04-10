@@ -5,6 +5,8 @@
  * Date: 10.04.2020
  */
 
+namespace App;
+
 class Parser implements ParserInterface
 {
     /**
